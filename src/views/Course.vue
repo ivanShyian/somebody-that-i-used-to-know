@@ -1,6 +1,13 @@
 <template>
-  <div class="PageCourse py-12">
-    <Container v-if="!isCourseLoading">
+  <div class="PageCourse">
+    <!-- @TODO Fixme -->
+    <Breadcrumbs
+      :breadcrumbs="[{
+        to: '/',
+        title: 'Course'
+      }]"
+    />
+    <Container v-if="!isCourseLoading" class="pt-12">
       <div class="flex gap-12 mb-8">
         <div class="basis-3/5">
           <img
@@ -41,8 +48,13 @@
       <!---->
       <div class="p-8 rounded-2xl">
         <h2 class="text-3xl font-extrabold dark:text-white mb-4">Lessons:</h2>
-        <div class="grid grid-cols-3 gap-8">
-          <div v-for="lesson in course.lessons" :key="lesson.id" class="relative cursor-pointer group overflow-hidden rounded-lg">
+        <div v-if="course.lessons" class="grid grid-cols-3 gap-8">
+          <router-link
+            v-for="lesson in course.lessons"
+            :key="lesson.id"
+            class="relative cursor-pointer group overflow-hidden rounded-lg"
+            :to="`/${course.meta.slug}/${lesson.order}`"
+          >
             <VImage
               class="group-hover:opacity-10"
               :src="`${lesson.previewImageLink}/lesson-${lesson.order}.webp`"
@@ -61,7 +73,7 @@
               class="absolute z-10 -bottom-10 left-4 font-light text-gray-500 dark:text-gray-400 group-hover:bottom-4 transition-all ease-in-out duration-300">
               {{ lesson.duration }}
             </p>
-          </div>
+          </router-link>
         </div>
       </div>
     </Container>
@@ -75,9 +87,11 @@ import Container from '@/components/ui/Container.vue';
 import Rating from '@/components/ui/Rating.vue';
 import VImage from '@/components/ui/VImage.vue';
 import { useCourseQuery } from '@/composables/useCourseQuery';
+import Breadcrumbs from '@/components/ui/Breadcrumbs.vue';
 
 export default defineComponent({
   components: {
+    Breadcrumbs,
     VImage,
     Rating,
     Container

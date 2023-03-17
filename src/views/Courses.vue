@@ -1,5 +1,6 @@
 <template>
   <div class="PageCourses">
+    <Breadcrumbs />
     <div v-if="isCoursesLoading">LOADING</div>
     <ul v-else class="flex flex-col">
       <li
@@ -20,8 +21,10 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import { useCoursesQuery } from '@/composables/useCoursesQuery';
+import Breadcrumbs from '@/components/ui/Breadcrumbs.vue';
 
 export default defineComponent({
+  components: { Breadcrumbs },
   async setup() {
     return {
       ...useCoursesQuery(),
