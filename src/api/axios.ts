@@ -1,5 +1,5 @@
-import axiosOriginal, { AxiosError } from 'axios';
-import type { AxiosInstance, AxiosRequestConfig } from 'axios';
+import axiosOriginal from 'axios';
+import type { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios';
 import { getLocalAccessToken } from './auth';
 
 const baseURL = `${import.meta.env.VITE_API_BASE_URL}/${import.meta.env.VITE_API_VERSION}`

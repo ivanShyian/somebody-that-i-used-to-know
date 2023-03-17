@@ -1,6 +1,6 @@
 <template>
   <div class="PageCourse py-12">
-    <Container>
+    <Container v-if="!isCourseLoading">
       <div class="flex gap-12 mb-8">
         <div class="basis-3/5">
           <img
@@ -14,7 +14,8 @@
             <div class="flex gap-x-4">
               <h1
                 class="text-4xl mb-4 font-extrabold leading-none tracking-tight text-gray-900 md:text-5xl lg:text-6xl dark:text-white">
-                {{ course.title }}</h1>
+                {{ course.title }}
+              </h1>
               <div class="flex flex-col">
                 <span
                   v-for="(tag, tagIndex) in course.tags"
@@ -28,9 +29,7 @@
             <p
               class="text-lg font-light text-gray-500 md:text-xl dark:text-gray-400"
             >
-              Deliver great service experiences
-              fast - without the complexity of traditional ITSM solutions.Accelerate critical development work and
-              deploy.
+              {{ course.description }}
             </p>
           </div>
           <div class="flex items-center gap-x-6">
@@ -43,10 +42,10 @@
       <div class="p-8 rounded-2xl">
         <h2 class="text-3xl font-extrabold dark:text-white mb-4">Lessons:</h2>
         <div class="grid grid-cols-3 gap-8">
-          <div v-for="lesson in courseLessons" :key="lesson.id" class="relative cursor-pointer group overflow-hidden rounded-lg">
+          <div v-for="lesson in course.lessons" :key="lesson.id" class="relative cursor-pointer group overflow-hidden rounded-lg">
             <VImage
               class="group-hover:opacity-10"
-              :src="lesson.previewImageLink + 'lesson.order.webp'"
+              :src="`${lesson.previewImageLink}/lesson-${lesson.order}.webp`"
               alt="lesson"
             />
             <div
@@ -72,22 +71,25 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import { useRoute } from 'vue-router';
-import { CoursesGateway } from '@/database/courses.gateway';
 import Container from '@/components/ui/Container.vue';
 import Rating from '@/components/ui/Rating.vue';
 import VImage from '@/components/ui/VImage.vue';
+import { useCourseQuery } from '@/composables/useCourseQuery';
 
 export default defineComponent({
-  components: { VImage, Rating, Container },
+  components: {
+    VImage,
+    Rating,
+    Container
+  },
   async setup() {
     const route = useRoute();
-    const courses = await CoursesGateway.getCourses();
-    const courseBySlug = courses.find((course: any) => course.meta.slug === route.params.slug);
-    const course = await CoursesGateway.getCourseById(courseBySlug.id);
+
+    const { course, isCourseLoading } = useCourseQuery(route.params.slug as string)
 
     return {
-      course: courseBySlug,
-      courseLessons: course.lessons,
+      isCourseLoading,
+      course,
     };
   }
 });

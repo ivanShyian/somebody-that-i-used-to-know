@@ -1,6 +1,7 @@
 <template>
   <div class="PageCourses">
-    <ul class="flex flex-col">
+    <div v-if="isCoursesLoading">LOADING</div>
+    <ul v-else class="flex flex-col">
       <li
         v-for="course in courses"
         :key="course.id"
@@ -18,14 +19,12 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import { CoursesGateway } from '@/database/courses.gateway';
+import { useCoursesQuery } from '@/composables/useCoursesQuery';
 
 export default defineComponent({
   async setup() {
-    const courses = await CoursesGateway.getCourses()
-
     return {
-      courses,
+      ...useCoursesQuery(),
     };
   }
 });

@@ -11,6 +11,9 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import LayoutDefault from '@/layouts/LayoutDefault.vue';
+import { useQueryProvider } from "vue-query";
+
+useQueryProvider();
 
 export default defineComponent({
   components: {
