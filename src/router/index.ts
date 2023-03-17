@@ -1,21 +1,33 @@
-import { createRouter, createWebHistory, RouteRecordRaw, } from "vue-router"
+import { createRouter, createWebHistory } from 'vue-router';
+import { getLocalAccessToken, setLocalAccessToken, signIn } from '@/api/auth';
 
-const routes: Array<RouteRecordRaw> = [
-  {
-    path: "/",
-    name: "Example",
-    component: () => import("../modules/example/pages/Example.vue")
-  },
-  {
-    path: "/about",
-    name: "About",
-    component: () => import("../modules/example/pages/About.vue")
-  }
-]
+import Courses from '@/views/Courses.vue';
+import Course from '@/views/Course.vue';
 
 const router = createRouter({
-  history: createWebHistory(),
-  routes,
+  history: createWebHistory(import.meta.env.BASE_URL),
+  routes: [
+    {
+      path: "/",
+      name: "courses",
+      component: Courses,
+    },
+    {
+      path: '/:slug',
+      name: "course",
+      component: Course,
+    },
+  ],
+});
+
+router.beforeEach(async (to, from, next) => {
+  const loggedIn = getLocalAccessToken()
+
+  if (!loggedIn) {
+    const token = await signIn()
+    setLocalAccessToken(token)
+  }
+  next();
 })
 
-export default router
+export default router;
