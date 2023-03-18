@@ -1,11 +1,20 @@
 import { useQuery } from 'vue-query';
 import { CoursesGateway } from '@/database/courses.gateway';
+import { Ref } from 'vue';
+import { ICourses } from '@/types/ICourses.types';
 
-export function useCoursesQuery() {
-  const { data, isLoading } = useQuery('courses', CoursesGateway.getCourses);
+interface ReturnType {
+  isCoursesLoading: Ref<boolean>;
+  isCoursesError: Ref<boolean>;
+  courses: Ref<ICourses.Model[] | undefined>;
+}
+
+export function useCoursesQuery(): ReturnType {
+  const { data, isLoading, isLoadingError, isError } = useQuery('courses', CoursesGateway.getCourses);
 
   return {
     isCoursesLoading: isLoading,
+    isCoursesError: isError || isLoadingError,
     courses: data,
   }
 }

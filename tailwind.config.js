@@ -8,7 +8,7 @@ module.exports = {
     darkMode: 'class',
     screens: {
       xl: { min: '1440px' },
-      lg: { max: '976px' },
+      lg: { max: '1220px' },
       md: { max: '768px' },
       sm: { max: '480px' },
     },
@@ -26,5 +26,7 @@ module.exports = {
       }
     }
   },
-  plugins: [],
+  plugins: [
+    require('@tailwindcss/line-clamp')
+  ],
 }

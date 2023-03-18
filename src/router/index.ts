@@ -1,9 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import { getLocalAccessToken, setLocalAccessToken, signIn } from '@/api/auth';
+import { getLocalAccessToken, setLocalAccessToken, signIn } from '@/utils/auth';
 
-import Courses from '@/views/Courses.vue';
-import Course from '@/views/Course.vue';
-import Lesson from '@/views/Lesson.vue';
+import PageCourses from '@/views/PageCourses.vue';
+import PageCourse from '@/views/PageCourse.vue';
+import PageLesson from '@/views/PageLesson.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -11,17 +11,17 @@ const router = createRouter({
     {
       path: "/",
       name: "courses",
-      component: Courses,
+      component: PageCourses,
     },
     {
       path: '/:slug',
       name: 'course',
-      component: Course,
+      component: PageCourse,
     },
     {
       path: '/:slug/:lessonNumber',
       name: 'lesson',
-      component: Lesson,
+      component: PageLesson,
     }
   ],
 });

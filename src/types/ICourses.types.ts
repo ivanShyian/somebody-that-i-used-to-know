@@ -1,4 +1,4 @@
-export namespace ICoursesList {
+export namespace ICourses {
   export interface Model {
     id: string;
     title: string;
