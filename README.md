@@ -1,6 +1,6 @@
 # Genesis courses application
 
-## Was deployed to ${} service. Link:
+### Link https://genesis-courses.web.app/:
 
 - [Vue 3](https://v3.vuejs.org/)
 - [Vite](https://vitejs.dev/)
