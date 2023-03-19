@@ -44,7 +44,8 @@
         </ul>
 
       </div>
-      <div class="flex flex-col gap-y-4">
+      <div
+        class="flex flex-col gap-y-4">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-x-3">
             <Rating

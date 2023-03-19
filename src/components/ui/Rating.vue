@@ -18,7 +18,7 @@
         </g>
         <defs>
           <linearGradient
-            :id="rating"
+            :id="rating.toString()"
             :class="color"
             class="fill-current"
           >
@@ -51,9 +51,8 @@ const MARGIN_COUNT = 4;
 export default defineComponent({
   props: {
     rating: {
-      type: [String, Number] as PropType<string | number>,
-      required: false,
-      default: 0,
+      type: Number as PropType<string | number>,
+      required: true,
     },
 
     size: {

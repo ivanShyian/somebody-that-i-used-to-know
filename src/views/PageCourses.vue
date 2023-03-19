@@ -14,8 +14,9 @@
     </ul>
 
     <Pagination
+      v-if="courses"
       v-model:current-page="currentPage"
-      :total-items="courses?.length"
+      :total-items="courses.length"
       :items-per-page="itemsPerPage"
     />
 
