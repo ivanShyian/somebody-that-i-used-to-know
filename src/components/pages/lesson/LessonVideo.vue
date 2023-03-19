@@ -6,41 +6,25 @@
       </h1>
     </div>
     <div class="flex flex-col items-start gap-x-4 w-full">
-      <div class="w-full rounded-md overflow-clip relative">
 
+      <LessonVideoWrapper
+        :current-video-speed="currentVideoSpeed"
+        :is-pip-active="isPIPActive"
+        :is-waiting="isWaiting"
+        :is-error-occurred="isErrorOccurred"
+        @enable-pip-mode="requestPip"
+      >
         <video
           ref="videoReference"
-          :class="{
-            'pointer-events-none': isErrorOccurred,
-            'opacity-100': true,
-          }"
-          class="w-full h-auto max-w-full relative opacity-0 transition-opacity duration-500"
+          class="w-full h-auto max-w-full relative transition-opacity duration-500"
           playsinline
           muted
           autoplay
           controls
         />
+      </LessonVideoWrapper>
 
-        <div
-          v-if="isErrorOccurred"
-          class="absolute z-10 bottom-0 right-0"
-        >
-          <p class="text-white text-4xl">Ooops! Something went wrong!</p>
-          <img
-            width="900"
-            height="551"
-            src="@/assets/img/error-image.png"
-            alt="error"
-            class="md:w-[450px] h-[275px]"
-          >
-        </div>
 
-        <Progress
-          v-else-if="isWaiting"
-          class="!absolute z-10 top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2"
-        />
-
-      </div>
       <div class="w-full">
         <slot name="playlist" />
       </div>
@@ -52,10 +36,13 @@
 import { defineComponent, PropType, ref } from 'vue';
 import { ICourse } from '@/types/ICourse.types';
 import { useVideoStream } from '@/composables/useVideoStream';
-import Progress from '@/components/ui/Progress.vue';
+
+import LessonVideoWrapper from '@/components/pages/lesson/LessonVideoWrapper.vue';
 
 export default defineComponent({
-  components: { Progress },
+  components: {
+    LessonVideoWrapper,
+  },
   props: {
     lesson: {
       type: Object as PropType<ICourse.Lesson>,
@@ -65,20 +52,13 @@ export default defineComponent({
   setup(props) {
     const videoReference = ref(null);
 
-    const { isErrorOccurred, isWaiting } = useVideoStream({
-      lesson: props.lesson,
-      videoReference
-    });
-
     return {
       videoReference,
-      isErrorOccurred,
-      isWaiting,
+      ...useVideoStream({
+        lesson: props.lesson,
+        videoReference
+      }),
     }
   }
 });
 </script>
-
-<style scoped>
-
-</style>

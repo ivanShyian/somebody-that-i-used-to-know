@@ -1,10 +1,12 @@
-import { onBeforeUnmount, reactive, ref, Ref, watch } from 'vue';
+import { computed, onBeforeUnmount, reactive, ref, Ref, watch } from 'vue';
 import { ICourse } from '@/types/ICourse.types';
+import { useRoute } from 'vue-router';
+
 import Hls, { ErrorData } from 'hls.js';
 import throttle from 'lodash.throttle';
 interface IProps {
   lesson: ICourse.Lesson;
-  videoReference: Ref<HTMLMediaElement | null>;
+  videoReference: Ref<HTMLVideoElement | null>;
 }
 
 interface IRunStreamProps {
@@ -13,18 +15,35 @@ interface IRunStreamProps {
   id: string
 }
 
+const THROTTLE_WAIT = 100;
+const LAST_SECOND_STORAGE = 'LAST_SECOND_STORAGE';
+
 export function useVideoStream({ lesson, videoReference }: IProps) {
-  const THROTTLE_WAIT = 100;
+  // FIXME Add reference of hls instance to window object ->
+  // FIXME while user go in pip mode.
+  // FIXME Hls instance must be destroyed ->
+  // FIXME if the user route to the same page where pip was enabled
+
+  const route = useRoute();
+
   const hls = reactive(new Hls({
     // Fixing error: failed to execute 'postMessage' on 'Worker'
     enableWorker: false,
   }));
 
+  const initialLessonRoute = `/${route.params.slug}/${route.params.lessonNumber}`;
+
+  const isPIPActive = ref(false);
   const isErrorOccurred = ref(false);
   const isBeenDestroyed = ref(false);
   const isWaiting = ref(false);
 
-  watch([lesson, videoReference], ([lesson, video]) => {
+  const currentVideoSpeed = ref(1);
+  const currentVideoTime = ref(0);
+
+  const isDestroyUnavailable = computed(() => isBeenDestroyed.value || isPIPActive.value);
+
+  const watcher = watch([lesson, videoReference], ([lesson, video]) => {
     if (lesson?.link && video instanceof HTMLVideoElement) {
       runStream({
         video,
@@ -36,9 +55,18 @@ export function useVideoStream({ lesson, videoReference }: IProps) {
     immediate: true
   });
 
+  // Methods
   function runStream({ video, link, id }: IRunStreamProps) {
+    video.addEventListener('keydown', handleKeydownListener);
+    video.addEventListener('ratechange', handleRateChange)
     video.addEventListener('timeupdate', () => {
-      saveCurrentTime(video.currentTime, id);
+      setCurrentTime(video.currentTime);
+    });
+    video.addEventListener('enterpictureinpicture', () => {
+      isPIPActive.value = true;
+    });
+    video.addEventListener('leavepictureinpicture', () => {
+      pipLeaveListener(video);
     });
 
     if (Hls.isSupported()) {
@@ -65,12 +93,74 @@ export function useVideoStream({ lesson, videoReference }: IProps) {
     }
   }
 
+  function setCurrentTime(videoCurrentTime: number) {
+    currentVideoTime.value = videoCurrentTime;
+  }
+
   function checkCurrentTime(id: string): number {
-    const lastSecond = localStorage.getItem(id + '-last-second');
-    if (lastSecond) {
-      return Number(lastSecond);
+    const lastSecondStorage = _getLastSecondStorage()
+    if (Object.keys(lastSecondStorage).length) {
+      return Number(lastSecondStorage[id] || 0);
     }
     return 0;
+  }
+
+  function saveCurrentTime(videoCurrentTime: number, id: string) {
+    const lastSecondMap = _getLastSecondStorage();
+
+    localStorage.setItem(LAST_SECOND_STORAGE, JSON.stringify({
+      ...lastSecondMap,
+      [id]: videoCurrentTime,
+    }));
+  }
+
+  function requestPip() {
+    if (document.pictureInPictureEnabled) {
+      videoReference.value?.requestPictureInPicture().then();
+    }
+  }
+
+  function _getLastSecondStorage() {
+    const lastSecond = localStorage.getItem(LAST_SECOND_STORAGE);
+    if (lastSecond) return JSON.parse(lastSecond);
+    return {};
+  }
+
+  function speedUp(video: HTMLVideoElement) {
+    if (video.playbackRate < 2) video.playbackRate += 0.25
+  }
+  function speedDown(video: HTMLVideoElement) {
+    if (video.playbackRate > 0.5) video.playbackRate -= 0.25
+  }
+
+  // Listeners
+  function handleRateChange(event: Event) {
+    const target = event.target as HTMLVideoElement;
+    currentVideoSpeed.value = target.playbackRate;
+  }
+
+  function handleKeydownListener(event: KeyboardEvent) {
+    // @TODO Move key codes to composable args to give ability user change these keys
+    const video = event.target as HTMLVideoElement;
+    if (event.code === 'Period') speedUp(video);
+    else if (event.code === 'Comma') speedDown(video);
+  }
+
+  function bufferListener(video: HTMLVideoElement) {
+    isWaiting.value = video.readyState !== 4 && !video.paused;
+  }
+
+  function pipLeaveListener(video: HTMLVideoElement) {
+    isPIPActive.value = false;
+    if (route.path === initialLessonRoute) return;
+    const videoClosure = video;
+    saveCurrentTime(currentVideoTime.value, lesson.id);
+    destroyVideoListeners(videoClosure);
+  }
+
+  function setCurrentTimeAndPlay(video: HTMLVideoElement, id: string) {
+    video.currentTime = checkCurrentTime(id);
+    video.play().then();
   }
 
   function errorListener(event: string | ErrorEvent, data?: ErrorData) {
@@ -83,21 +173,8 @@ export function useVideoStream({ lesson, videoReference }: IProps) {
     isErrorOccurred.value = true;
   }
 
-  function bufferListener(video: HTMLVideoElement) {
-    isWaiting.value = !(video.readyState === 4 && !video.paused);
-  }
-
-  function setCurrentTimeAndPlay(video: HTMLVideoElement, id: string) {
-    video.currentTime = checkCurrentTime(id);
-    video.play().then();
-  }
-
-  function saveCurrentTime(videoCurrentTime: number, id: string) {
-    localStorage.setItem(id + '-last-second', JSON.stringify(videoCurrentTime));
-  }
-
-  function destroyVideoListeners() {
-    const video = videoReference.value as HTMLVideoElement;
+  function destroyVideoListeners(videoArg?: HTMLVideoElement) {
+    const video = videoArg || videoReference.value as HTMLVideoElement;
     const id = lesson.id;
 
     hls.off(Hls.Events.MANIFEST_PARSED, () => {
@@ -109,24 +186,38 @@ export function useVideoStream({ lesson, videoReference }: IProps) {
     hls.off(Hls.Events.ERROR, errorListener)
     hls.destroy();
 
-
+    video.removeEventListener('keydown',  handleKeydownListener);
+    video.removeEventListener('ratechange', handleRateChange)
     video.removeEventListener('timeupdate', () => {
-      saveCurrentTime(video.currentTime, id);
+      setCurrentTime(video.currentTime);
     });
     video.removeEventListener('loadedmetadata', () => (
       setCurrentTimeAndPlay(video, id)
     ));
+    video.removeEventListener('enterpictureinpicture', () => {
+      isPIPActive.value = true;
+    });
+    video.removeEventListener('leavepictureinpicture', () => {
+      pipLeaveListener(video);
+    });
 
     isBeenDestroyed.value = true;
   }
 
+  // Vue events
   onBeforeUnmount(() => {
-    if (isBeenDestroyed.value) return;
+    if (isDestroyUnavailable.value) return;
+    saveCurrentTime(currentVideoTime.value, lesson.id);
     destroyVideoListeners();
+    watcher();
   })
 
   return {
     isErrorOccurred,
+    isPIPActive,
     isWaiting,
+    currentVideoSpeed,
+
+    requestPip,
   };
 }

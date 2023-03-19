@@ -1,4 +1,4 @@
-import { computed, ComputedRef, Ref, ref, toRef, watch } from 'vue';
+import { computed, ComputedRef, onBeforeUnmount, Ref, ref, toRef, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 interface IReturnType {
@@ -29,12 +29,16 @@ export function usePagination(itemsPerPage = 6): IReturnType {
     (currentPage.value - 1) * itemsPerPage + itemsPerPage
   ]);
 
-  watch(toRef(route, 'query'), (newValue) => {
+  const watcher = watch(toRef(route, 'query'), (newValue) => {
     if (newValue?.page) _page.value = Number(newValue.page);
   }, {
     deep: true,
     immediate: true,
   })
+
+  onBeforeUnmount(() => {
+    watcher();
+  });
 
   return {
     itemsPerPage,

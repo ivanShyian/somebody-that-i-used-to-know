@@ -13,7 +13,7 @@
         <LessonVideo :lesson="currentLesson">
           <template #playlist>
             <LessonPlaylist
-              :lessons="lessons"
+              :lessons="sortedLessons"
               :current-lesson-id="currentLesson?.id"
             />
           </template>
@@ -24,8 +24,8 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent } from 'vue';
-import { useRoute } from 'vue-router';
+import { computed, defineComponent, onBeforeUnmount, ref, toRef, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { useCourseQuery } from '@/composables/useCourseQuery';
 import { convertPathToTitle } from '@/utils/convertPathToTitle';
 
@@ -33,6 +33,7 @@ import PageWrapper from '@/components/ui/PageWrapper.vue';
 import Card from '@/components/ui/Card.vue';
 import LessonVideo from '@/components/pages/lesson/LessonVideo.vue';
 import LessonPlaylist from '@/components/pages/lesson/LessonPlaylist.vue';
+import { useLastViewed } from '@/composables/useRecentlyVisited';
 
 export default defineComponent({
   components: {
@@ -43,30 +44,54 @@ export default defineComponent({
   },
   setup() {
     const route = useRoute();
+    const router = useRouter();
 
+    const isLessonLocked = ref(false);
     const { slug, lessonNumber } = route.params;
-    const { course, isCourseLoading, isCourseError } = useCourseQuery(slug as string)
+    const slugString = slug as string;
 
+    const { course, isCourseLoading, isCourseError } = useCourseQuery(slugString);
+    const { setLastViewed } = useLastViewed(slugString);
 
-    const lessons = computed(() => course.value?.lessons);
-    const currentLesson = computed(() => lessons.value?.[Number(lessonNumber) - 1]);
+    const sortedLessons = computed(() => {
+      if (course.value) {
+        return [...course.value.lessons].sort((a, b) => a.order - b.order);
+      }
+      return [];
+    })
+    const currentLesson = computed(() => sortedLessons.value?.[Number(lessonNumber) - 1]);
 
-    // Ugly
+    // Beauty
     const breadcrumbs = computed(() => {
-      const splitPath = route.path.split('/');
+      const [, previousPage, nextPage] = route.path.split('/');
       return [{
-        title: convertPathToTitle(splitPath[1]),
-        to: `/${splitPath[1]}`
+        title: convertPathToTitle(previousPage),
+        to: `/${previousPage}`
       }, {
-        title: 'Lesson ' + convertPathToTitle(splitPath[2]),
+        title: 'Lesson ' + convertPathToTitle(nextPage),
       }]
     })
+
+    const watcher = watch(currentLesson, (lesson) => {
+      if (lesson && lesson.status === 'locked') {
+        isLessonLocked.value = true;
+        router.push(`/${slug}`);
+      }
+    }, {
+      immediate: true,
+    })
+
+    onBeforeUnmount(() => {
+      if (isLessonLocked.value) return;
+      setLastViewed(currentLesson.value.order);
+      watcher();
+    });
 
     return {
       isCourseLoading,
       isCourseError,
+      sortedLessons,
       currentLesson,
-      lessons,
       breadcrumbs,
     }
   },

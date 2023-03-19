@@ -23,6 +23,7 @@
 <script lang="ts">
 import { defineComponent, PropType } from 'vue';
 import { ICourses } from '@/types/ICourses.types';
+
 import VButton from '@/components/ui/VButton.vue';
 import Card from '@/components/ui/Card.vue';
 

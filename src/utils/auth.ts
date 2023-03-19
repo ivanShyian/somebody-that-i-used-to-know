@@ -1,18 +1,16 @@
 import { axios } from '@/api/axios';
 
-interface AuthResponse {
-  token: string;
-}
+const TOKEN = 'accessToken'
 
 export async function signIn () {
-  const { data } = await axios.get<AuthResponse>('/auth/anonymous?platform=subscriptions');
-  return data.token
+  const { token } = (await axios.get<{ token: string }>('/auth/anonymous?platform=subscriptions')).data;
+  return token;
 }
 
 export function setLocalAccessToken (token: string) {
-  return window.localStorage.setItem("accessToken", token);
+  return window.localStorage.setItem(TOKEN, token);
 }
 
 export function getLocalAccessToken () {
-  return window.localStorage.getItem('accessToken');
+  return window.localStorage.getItem(TOKEN);
 }

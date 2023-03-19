@@ -7,7 +7,7 @@
 
     <ul class="grid grid-cols-3 justify-items-center items-center gap-8 pb-8 lg:grid-cols-2 md:grid-cols-1">
       <CourseCard
-        v-for="course in posts"
+        v-for="course in paginatedCourses"
         :key="course.id"
         :course="course"
       />
@@ -41,17 +41,17 @@ export default defineComponent({
     const { courses, isCoursesLoading, isCoursesError } = useCoursesQuery();
     const { currentPage, itemsPerPage, postsRange } = usePagination();
 
-    const posts = computed(() => {
+    const paginatedCourses = computed(() => {
       return courses.value?.slice(...postsRange.value);
     })
 
     return {
+      paginatedCourses,
       isCoursesLoading,
       isCoursesError,
       itemsPerPage,
       currentPage,
       courses,
-      posts,
     };
   }
 });
